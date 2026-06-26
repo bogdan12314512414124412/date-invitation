@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Запрошення на побачення</title>
+  <style>
+    :root {
+      --pink: #ff7fa5;
+      --pink-dark: #df4076;
+      --text: #43313a;
+      --muted: #8d6f7c;
+      --white: #fff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, #ffd6e3 0, transparent 28%),
+        radial-gradient(circle at 85% 8%, #fff0f6 0, transparent 30%),
+        linear-gradient(135deg, #fffafc, #fff1f6 48%, #fff);
+    }
+
+    .heart-rain {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .heart {
+      position: absolute;
+      top: -30px;
+      font-size: 18px;
+      animation: fall linear forwards;
+      opacity: 0.75;
+    }
+
+    @keyframes fall {
+      from { transform: translateY(-30px) rotate(0deg); opacity: 0; }
+      12% { opacity: 1; }
+      to { transform: translateY(110vh) translateX(var(--drift)) rotate(260deg); opacity: 0; }
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px 14px;
+    }
+
+    .screen {
+      display: none;
+      width: min(100%, 520px);
+      animation: appear 0.65s cubic-bezier(.2,.9,.2,1) both;
+    }
+
+    .screen.active { display: block; }
+
+    @keyframes appear {
+      from { opacity: 0; transform: translateY(18px) scale(.98); filter: blur(8px); }
+      to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
+    .card {
+      padding: clamp(18px, 4vw, 30px);
+      border-radius: 28px;
+      background: rgba(255,255,255,.76);
+      border: 1px solid rgba(255,255,255,.8);
+      box-shadow: 0 24px 70px rgba(211,75,123,.22);
+      backdrop-filter: blur(22px);
+    }
+
+    .photo {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+      border-radius: 24px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,230,238,.85)),
+        repeating-linear-gradient(135deg, rgba(255,127,165,.1) 0 8px, transparent 8px 18px);
+      box-shadow: 0 14px 35px rgba(151,72,104,.16);
+    }
+
+    .photo img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .photo img[src=""] { opacity: 0; }
+
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(67,49,58,.48);
+      font-size: 18px;
+      text-align: center;
+    }
+
+    .content {
+      padding-top: 28px;
+      text-align: center;
+    }
+
+    h1, h2 {
+      margin: 0;
+      letter-spacing: 0;
+      color: var(--text);
+    }
+
+    h1 {
+      font-size: clamp(38px, 9vw, 58px);
+      line-height: 1;
+    }
+
+    h2 {
+      font-size: clamp(30px, 7vw, 44px);
+      line-height: 1.08;
+    }
+
+    .question {
+      margin: 18px auto 0;
+      max-width: 430px;
+      font-size: clamp(22px, 5.6vw, 34px);
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .subtext {
+      margin: 16px auto 0;
+      max-width: 410px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    .buttons {
+      position: relative;
+      height: 300px;
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    button, select { font: inherit; }
+
+    .btn {
+      min-width: 130px;
+      min-height: 54px;
+      border: 0;
+      border-radius: 999px;
+      cursor: pointer;
+      color: var(--white);
+      background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+      box-shadow: 0 14px 30px rgba(223,64,118,.28);
+      font-size: 17px;
+      font-weight: 800;
+      transition: transform .18s ease, box-shadow .18s ease, background .2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 38px rgba(223,64,118,.34);
+    }
+
+    .no-btn {
+      position: absolute;
+      left: calc(50% + 8px);
+      top: 123px;
+      color: var(--pink-dark);
+      background: rgba(255,255,255,.95);
+      box-shadow: 0 12px 28px rgba(151,72,104,.16);
+      transition:
+        left .25s cubic-bezier(.18,.95,.25,1.25),
+        top .25s cubic-bezier(.18,.95,.25,1.25),
+        transform .18s ease,
+        background .2s ease,
+        color .2s ease;
+    }
+
+    #yesBtn {
+      position: absolute;
+      left: calc(50% - 138px);
+      top: 123px;
+    }
+
+    .no-btn.converted {
+      color: white;
+      background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+    }
+
+    .date-panel {
+      margin-top: 30px;
+      display: grid;
+      gap: 18px;
+    }
+
+    select {
+      width: 100%;
+      min-height: 62px;
+      padding: 0 20px;
+      border-radius: 20px;
+      border: 1px solid rgba(249,95,145,.24);
+      background: rgba(255,255,255,.9);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 750;
+      box-shadow: 0 14px 35px rgba(151,72,104,.14);
+      outline: none;
+    }
+
+    .confirm { width: 100%; }
+
+    .final-message {
+      margin: 24px auto 0;
+      max-width: 430px;
+      display: grid;
+      gap: 13px;
+      text-align: left;
+      font-size: clamp(17px, 4.2vw, 21px);
+      line-height: 1.5;
+    }
+
+    .final-message p {
+      margin: 0;
+      padding: 15px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.68);
+      border: 1px solid rgba(249,95,145,.13);
+      box-shadow: 0 10px 26px rgba(151,72,104,.1);
+    }
+
+    .final-note {
+      margin-top: 22px;
+      color: var(--pink-dark);
+      font-size: clamp(20px, 5vw, 28px);
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 520px) {
+      .app { align-items: start; }
+      .buttons { height: 300px; }
+      .btn {
+        min-width: 116px;
+        font-size: 16px;
+      }
+      #yesBtn {
+        left: calc(50% - 126px);
+      }
+      .no-btn {
+        left: calc(50% + 8px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="heart-rain"></div>
+
+  <main class="app">
+    <section class="screen active" id="invite">
+      <div class="card">
+        <div class="photo">
+          <img src="alina.jpg" alt="Фото Аліни" />
+        </div>
+
+        <div class="content">
+          <h1>Аліна ❤️</h1>
+          <p class="question">Хочеш піти зі мною на побачення в Wellness? 🧖‍♀️💕</p>
+
+          <div class="buttons" id="buttonArea">
+            <button class="btn" id="yesBtn">Так ❤️</button>
+            <button class="btn no-btn" id="noBtn">Ні 🙈</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="date">
+      <div class="card">
+        <div class="content">
+          <h2>Обери дату нашого побачення 💕</h2>
+          <p class="subtext">Лише день, який тобі найприємніший.</p>
+
+          <div class="date-panel">
+            <select id="dateSelect">
+              <option value="3 липня">3 липня</option>
+              <option value="9 липня">9 липня</option>
+              <option value="10 липня">10 липня</option>
+              <option value="15 липня">15 липня</option>
+              <option value="17 липня">17 липня</option>
+            </select>
+
+            <button class="btn confirm" id="confirmBtn">Підтвердити ❤️</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="final">
+      <div class="card">
+        <div class="content">
+          <h2>Дякую ❤️</h2>
+
+          <div class="final-message">
+            <p>❤️ Дякую, що погодилася піти зі мною.</p>
+            <p>📅 Обрана дата: <strong id="chosenDate">18 липня</strong></p>
+            <p>🧖‍♀️ Місце: <strong>Wellness</strong></p>
+          </div>
+
+          <div class="final-note">
+            Я вже дуже чекаю нашого побачення 🥹❤️<br />
+            До зустрічі, сонечко 💕
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const yesBtn = document.querySelector("#yesBtn");
+    const noBtn = document.querySelector("#noBtn");
+    const buttonArea = document.querySelector("#buttonArea");
+    const dateSelect = document.querySelector("#dateSelect");
+    const chosenDate = document.querySelector("#chosenDate");
+
+    const screens = {
+      invite: document.querySelector("#invite"),
+      date: document.querySelector("#date"),
+      final: document.querySelector("#final")
+    };
+
+    const noTexts = [
+      "Ні 🙈",
+      "Ти серйозно? 🥺",
+      "Ну Алінааа 😭",
+      "Подумай ще 🥹",
+      "Ну будь ласка ❤️",
+      "А може Wellness? 🧖‍♀️",
+      "Останній шанс 🥺",
+      "Я ж стараюсь ❤️",
+      "Точно ні? 🥹",
+      "Ну добре... Так ❤️"
+    ];
+
+    let attempts = 0;
+    let converted = false;
+
+    function show(screen) {
+      Object.values(screens).forEach(s => s.classList.remove("active"));
+      screen.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function convertNo() {
+      converted = true;
+      noBtn.textContent = "Так ❤️";
+      noBtn.classList.add("converted");
+      noBtn.style.left = "calc(50% + 8px)";
+      noBtn.style.top = "123px";
+    }
+
+    function moveNo() {
+      if (converted) return;
+
+      attempts++;
+      noBtn.textContent = noTexts[Math.min(attempts, noTexts.length - 1)];
+
+      if (attempts >= 10) {
+        convertNo();
+        return;
+      }
+
+      const area = buttonArea.getBoundingClientRect();
+      const btn = noBtn.getBoundingClientRect();
+      const padding = 14;
+
+      const maxX = area.width - btn.width - padding;
+      const maxY = area.height - btn.height - padding;
+
+      let newX = padding + Math.random() * Math.max(0, maxX - padding);
+      let newY = padding + Math.random() * Math.max(0, maxY - padding);
+
+      const currentX = btn.left - area.left;
+      const currentY = btn.top - area.top;
+      const minDistance = 120;
+
+      if (Math.hypot(newX - currentX, newY - currentY) < minDistance) {
+        newX = currentX < area.width / 2 ? maxX : padding;
+        newY = currentY < area.height / 2 ? maxY : padding;
+      }
+
+      noBtn.style.left = `${newX}px`;
+      noBtn.style.top = `${newY}px`;
+    }
+
+    function heart() {
+      const el = document.createElement("span");
+      const symbols = ["❤️", "💕", "💗", "💖"];
+      el.className = "heart";
+      el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      el.style.left = `${Math.random() * 100}%`;
+      el.style.fontSize = `${14 + Math.random() * 18}px`;
+      el.style.animationDuration = `${6 + Math.random() * 6}s`;
+      el.style.setProperty("--drift", `${Math.random() * 120 - 60}px`);
+      document.querySelector(".heart-rain").appendChild(el);
+      setTimeout(() => el.remove(), 12500);
+    }
+
+    yesBtn.addEventListener("click", () => show(screens.date));
+
+    noBtn.addEventListener("mouseenter", moveNo);
+    noBtn.addEventListener("focus", moveNo);
+    noBtn.addEventListener("touchstart", e => {
+      if (!converted) {
+        e.preventDefault();
+        moveNo();
+      }
+    }, { passive: false });
+
+    noBtn.addEventListener("click", () => {
+      converted ? show(screens.date) : moveNo();
+    });
+
+    document.querySelector("#confirmBtn").addEventListener("click", () => {
+      chosenDate.textContent = dateSelect.value;
+      show(screens.final);
+      for (let i = 0; i < 18; i++) setTimeout(heart, i * 70);
+    });
+
+    for (let i = 0; i < 14; i++) setTimeout(heart, i * 240);
+    setInterval(heart, 760);
+  </script>
+</body>
+</html>
